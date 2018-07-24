@@ -478,14 +478,26 @@ int main(void) {
    * run on an 'external reset only' status
    */
 #if !defined(__AVR_ATmega16__)
-  ch = MCUSR;
-  MCUSR = 0;
+  ch = MCUSR;	//Read the reset reason into RAM
+  MCUSR = 0;	//Reset the reset reason register (MCU status register)
 #else
   ch = MCUCSR;
   MCUCSR = 0;
 #endif
-  if (ch & (_BV(WDRF) | _BV(BORF) | _BV(PORF)))
-      appStart(ch);
+  //if (ch & (_BV(WDRF) | _BV(BORF) | _BV(PORF)))	//If reset reason was watchdog, brownout, or power on reset
+      //appStart(ch);
+	  
+	//TOM EDIT: changed the criteria under which bootloader will immediately jump to application code.  Now instead of
+	//automatically jumping to application code on watchdog reset, it will first check if there is a flag set in EEPROM 
+	//specifying that a DFU firmware update is pending.  This allows the user app to initiate a firmware update using a watchdog
+	//timeout reset strategy, instead of only being able to update firmware after the reset pin is physically pulled low.  This opens
+	//the door to 3-wire firmware update using optiboot (user app sets flag, initiates watchdog suicide, and then downloads new
+	//firmware payload over UART), which means you don't need the reset signal.
+	if (ch & (BV(BORF) | _BV(PORF)))	//If reset reason was watchdog, brownout, or power on reset
+		appStart(ch);
+	
+	if (ch & BV(WDRF) && (eeprom_read_byte(DFU_UPDATE_PENDING_EEPROM_ADDRESS))) //If reset reason was watchdog, and the DFU update pending byte == 0xFF
+		appStart(ch);
 
 #if LED_START_FLASHES > 0
   // Set up Timer 1 for timeout counter

@@ -44,6 +44,9 @@
 # program name should not be changed...
 PROGRAM    = optiboot
 
+# TOM--> defined the custom verison of optiboot that I'm making
+OPTIBOOT_CUSTOMVER = 100
+
 # The default behavior is to build using tools that are in the users
 # current path variables, but we can also build using an installed
 # Arduino user IDE setup, or the Arduino source tree.
